@@ -1,0 +1,50 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install Docker and Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker.io docker-compose
+          sudo systemctl start docker
+          sudo systemctl enable docker
+
+      - name: Log in to AWS ECR
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set default.region us-east-1  # Modify the region as needed
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <your-ecr-url>
+
+      - name: Build Docker image
+        run: |
+          docker build -t flask-rest-app .
+          docker tag flask-rest-app:latest <your-ecr-url>/flask-rest-app:latest
+
+      - name: Push Docker image to ECR
+        run: |
+          docker push <your-ecr-url>/flask-rest-app:latest
+
+      - name: Deploy application using Docker Compose
+        run: |
+          docker-compose -f docker-compose.yml up -d
+
+      - name: Clean up
+        run: |
+          docker-compose -f docker-compose.yml down
