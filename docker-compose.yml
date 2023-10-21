@@ -1,0 +1,35 @@
+version: '3'
+services:
+  web:
+    image: flask-rest-app
+    ports:
+      - "5000:5000"  # Mapping for the first container
+    environment:
+      APP_HOST: 0.0.0.0
+      DATABASE_URI: postgresql+psycopg2://your_user:your_password@postgres:5432/your_db
+      REDIS_HOST: redis
+    depends_on:
+      - redis
+      - postgres
+
+  web_2:
+    image: flask-rest-app
+    ports:
+      - "5001:5000"  # Mapping for the second container to avoid conflicts
+    environment:
+      APP_HOST: 0.0.0.0
+      DATABASE_URI: postgresql+psycopg2://your_user:your_password@postgres:5432/your_db
+      REDIS_HOST: redis
+    depends_on:
+      - redis
+      - postgres
+
+  redis:
+    image: redis
+
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: 2131
+      POSTGRES_DB: your_db
